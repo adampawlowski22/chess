@@ -16,7 +16,7 @@ pygame.init()
 # Set the width and height of the screen
 board_size = 640
 tile_size = board_size // 8
-sidebar_width = 200
+sidebar_width = 300
 screen = pygame.display.set_mode((board_size + sidebar_width, board_size))
 pygame.display.set_caption("Chessboard")
 
@@ -50,6 +50,25 @@ notation = []
 # Start the clock
 start_time = time.time()
 
+# Define the promotion menu pieces
+promotion_menu_pieces = [chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT]
+
+# Store the clicked promotion menu piece
+clicked_promotion_piece = None
+
+
+# Function to handle pawn promotion
+def handle_promotion(move):
+    global clicked_promotion_piece
+    if clicked_promotion_piece is not None:
+        move.promotion = clicked_promotion_piece
+        if move in board.legal_moves:
+            # If the move is valid, update the board
+            board.push(move)
+            notation.append(move)
+    # Reset the clicked promotion piece
+    clicked_promotion_piece = None
+
 
 # Main game loop
 running = True
@@ -63,6 +82,15 @@ while running:
             # Get the tile position where the mouse was clicked
             x, y = pygame.mouse.get_pos()
             if x > board_size:
+                # Check if the click is inside the promotion menu
+                menu_x = board_size + 10
+                menu_y = (board_size - tile_size) // 2
+                menu_width = sidebar_width - 20
+                menu_height = tile_size
+                if menu_x <= x <= menu_x + menu_width and menu_y <= y <= menu_y + menu_height:
+                    clicked_index = (x - menu_x) // tile_size
+                    clicked_promotion_piece = promotion_menu_pieces[clicked_index]
+                    continue
                 # Ignore clicks on the sidebar
                 continue
             row = 7 - y // tile_size
@@ -82,40 +110,16 @@ while running:
                 # If a piece is already selected, try to make a move
                 move = chess.Move(selected_piece_pos, square)
 
-                if (
-                        selected_piece.piece_type == chess.PAWN
-                        and (
-                        chess.square_rank(move.to_square) == 0
-                        or chess.square_rank(move.to_square) == 7
-                )
+                if selected_piece.piece_type == chess.PAWN and (
+                        chess.square_rank(move.to_square) == 0 or chess.square_rank(move.to_square) == 7
                 ):
                     # Handle pawn promotion
-                    promotion_piece = chess.QUEEN  # Change this to the desired promotion piece
-                    move.promotion = promotion_piece
-                    if move in board.legal_moves:
-                        # If the move is valid, update the board
-                        board.push(move)
-                        notation.append(move)
-
-                    # Check if the move is a capture to promotion
-                elif (
-                        selected_piece.piece_type == chess.PAWN
-                        and board.is_capture(move)
-                        and (
-                                chess.square_rank(move.to_square) == 0
-                                or chess.square_rank(move.to_square) == 7
-                        )
+                    handle_promotion(move)
+                elif selected_piece.piece_type == chess.PAWN and board.is_capture(move) and (
+                        chess.square_rank(move.to_square) == 0 or chess.square_rank(move.to_square) == 7
                 ):
                     # Handle capture to promotion
-                    captured_piece = board.piece_at(move.to_square)
-                    promotion_piece = chess.QUEEN  # Change this to the desired promotion piece
-                    move.promotion = promotion_piece
-                    if move in board.legal_moves:
-                        # If the move is valid, update the board
-                        board.push(move)
-                        notation.append(move)
-
-                    # Handle regular moves
+                    handle_promotion(move)
                 else:
                     if move in board.legal_moves:
                         # If the move is valid, update the board
@@ -161,6 +165,20 @@ while running:
     # Draw the sidebar
     pygame.draw.rect(screen, WHITE, (board_size, 0, sidebar_width, board_size))
 
+    # Draw the promotion menu on the sidebar
+    menu_x = board_size + 10
+    menu_y = (board_size - tile_size) // 2
+    menu_width = sidebar_width - 20
+    menu_height = tile_size
+    pygame.draw.rect(screen, BLUE if clicked_promotion_piece is not None else WHITE,
+                     (menu_x, menu_y, menu_width, menu_height))
+    menu_piece_width = menu_width // len(promotion_menu_pieces)
+    for i, piece_type in enumerate(promotion_menu_pieces):
+        piece_image = piece_images[(piece_type, chess.WHITE)]
+        piece_rect = piece_image.get_rect()
+        piece_rect.center = (menu_x + (i + 0.5) * menu_piece_width, menu_y + tile_size / 2)
+        screen.blit(piece_image, piece_rect)
+
     # Draw the clock
     elapsed_time = int(time.time() - start_time)
     minutes = elapsed_time // 60
@@ -171,7 +189,7 @@ while running:
 
     # Draw the notation of played moves as a list
     notation_x = board_size + 10
-    notation_y = 100
+    notation_y = menu_y + tile_size + 20
     for i in range(0, len(notation), 2):
         move1 = notation[i]
         move2 = notation[i + 1] if i + 1 < len(notation) else ""
