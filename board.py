@@ -88,7 +88,7 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == "MainMenu":
                 # Check if the "Start Game" button was clicked
-                if 300 <= event.pos[0] <= 500 and 250 <= event.pos[1] <= 300:
+                if 500 >= event.pos[0] >= 300 >= event.pos[1] >= 250:
                     game_state = "Chessboard"
 
             elif game_state == "Chessboard":
@@ -145,13 +145,23 @@ while running:
                     selected_piece_pos = None
 
     # Clear the screen
-    screen.fill(GRAY)
+    screen.fill(LIGHT_BROWN)
 
     if game_state == "MainMenu":
         # Draw the main menu
-        start_game_button = pygame.draw.rect(screen, BLUE, (300, 250, 200, 50))
-        start_game_text = clock_font.render("Start Game", True, WHITE)
-        screen.blit(start_game_text, (325, 260))
+        header_text = clock_font.render("Chess by Adam Pawlowski", True, BLACK)
+        screen.blit(header_text, (50, 50))
+
+        pvp = pygame.draw.rect(screen, DARK_BROWN, (50, 250, 230, 50))
+        pvp_text = clock_font.render("Player vs Player", True, BLACK)
+        screen.blit(pvp_text, (60, 260))
+        pve = pygame.draw.rect(screen, DARK_BROWN, (50, 350, 230, 50))
+        pve_text = clock_font.render("Player vs Engine", True, BLACK)
+        screen.blit(pve_text, (60, 360))
+        eve = pygame.draw.rect(screen, DARK_BROWN, (50, 450, 230, 50))
+        eve_text = clock_font.render("Engine vs Engine", True, BLACK)
+        screen.blit(eve_text, (60, 460))
+
 
     elif game_state == "Chessboard":
         # Draw the chessboard
