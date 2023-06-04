@@ -1,20 +1,30 @@
 import pygame
 import chess
+import time
 
 # Define some colors
 LIGHT_BROWN = (176, 142, 112)
 DARK_BROWN = (232, 204, 168)
 GRAY = (128, 128, 128)
 BLUE = (0, 0, 255)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
 # Initialize Pygame
 pygame.init()
 
 # Set the width and height of the screen
-board_size = 512
+board_size = 640
 tile_size = board_size // 8
-screen = pygame.display.set_mode((board_size, board_size))
+sidebar_width = 200
+screen = pygame.display.set_mode((board_size + sidebar_width, board_size))
 pygame.display.set_caption("Chessboard")
+
+# Set the clock font and size
+clock_font = pygame.font.Font(None, 36)
+
+# Set the notation font and size
+notation_font = pygame.font.Font(None, 24)
 
 # Create a chess board
 board = chess.Board()
@@ -34,6 +44,13 @@ for piece_type in chess.PIECE_TYPES:
 selected_piece = None
 selected_piece_pos = None
 
+# Store the notation of played moves
+notation = []
+
+# Start the clock
+start_time = time.time()
+
+
 # Main game loop
 running = True
 while running:
@@ -45,6 +62,9 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             # Get the tile position where the mouse was clicked
             x, y = pygame.mouse.get_pos()
+            if x > board_size:
+                # Ignore clicks on the sidebar
+                continue
             row = 7 - y // tile_size
             col = x // tile_size
 
@@ -61,9 +81,46 @@ while running:
             else:
                 # If a piece is already selected, try to make a move
                 move = chess.Move(selected_piece_pos, square)
-                if move in board.legal_moves:
-                    # If the move is valid, update the board
-                    board.push(move)
+
+                if (
+                        selected_piece.piece_type == chess.PAWN
+                        and (
+                        chess.square_rank(move.to_square) == 0
+                        or chess.square_rank(move.to_square) == 7
+                )
+                ):
+                    # Handle pawn promotion
+                    promotion_piece = chess.QUEEN  # Change this to the desired promotion piece
+                    move.promotion = promotion_piece
+                    if move in board.legal_moves:
+                        # If the move is valid, update the board
+                        board.push(move)
+                        notation.append(move)
+
+                    # Check if the move is a capture to promotion
+                elif (
+                        selected_piece.piece_type == chess.PAWN
+                        and board.is_capture(move)
+                        and (
+                                chess.square_rank(move.to_square) == 0
+                                or chess.square_rank(move.to_square) == 7
+                        )
+                ):
+                    # Handle capture to promotion
+                    captured_piece = board.piece_at(move.to_square)
+                    promotion_piece = chess.QUEEN  # Change this to the desired promotion piece
+                    move.promotion = promotion_piece
+                    if move in board.legal_moves:
+                        # If the move is valid, update the board
+                        board.push(move)
+                        notation.append(move)
+
+                    # Handle regular moves
+                else:
+                    if move in board.legal_moves:
+                        # If the move is valid, update the board
+                        board.push(move)
+                        notation.append(move)
 
                 # Reset the selected piece and its position
                 selected_piece = None
@@ -100,6 +157,28 @@ while running:
         selected_x = chess.square_file(selected_piece_pos) * tile_size
         selected_y = (7 - chess.square_rank(selected_piece_pos)) * tile_size
         pygame.draw.rect(screen, BLUE, (selected_x, selected_y, tile_size, tile_size), 5)
+
+    # Draw the sidebar
+    pygame.draw.rect(screen, WHITE, (board_size, 0, sidebar_width, board_size))
+
+    # Draw the clock
+    elapsed_time = int(time.time() - start_time)
+    minutes = elapsed_time // 60
+    seconds = elapsed_time % 60
+    clock_text = f"Time: {minutes:02d}:{seconds:02d}"
+    clock_surface = clock_font.render(clock_text, True, BLACK)
+    screen.blit(clock_surface, (board_size + 10, 10))
+
+    # Draw the notation of played moves as a list
+    notation_x = board_size + 10
+    notation_y = 100
+    for i in range(0, len(notation), 2):
+        move1 = notation[i]
+        move2 = notation[i + 1] if i + 1 < len(notation) else ""
+        move_text = f"{i // 2 + 1}. {move1} {move2}"
+        notation_surface = notation_font.render(move_text, True, BLACK)
+        screen.blit(notation_surface, (notation_x, notation_y))
+        notation_y += notation_surface.get_height() + 5
 
     # Update the display
     pygame.display.flip()
