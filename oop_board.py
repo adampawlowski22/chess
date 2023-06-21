@@ -84,7 +84,6 @@ class ChessGame:
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                             if start_button_rect.collidepoint(event.pos):
                                 self.game_state = "Chessboard"
-
                     elif self.game_state == "Chessboard":
                         # Handle chessboard events
                         x, y = pygame.mouse.get_pos()
@@ -179,7 +178,11 @@ class ChessGame:
                 piece = self.board.piece_at(square)
                 if piece is not None:
                     piece_image = self.piece_images[(piece.piece_type, piece.color)]
-                    self.screen.blit(piece_image, (col * self.tile_size, row * self.tile_size))
+                    piece_pos = (col * self.tile_size, row * self.tile_size)
+                    if square == self.selected_piece_pos:
+                        pygame.draw.rect(self.screen, self.BLUE,
+                                         (*piece_pos, self.tile_size, self.tile_size))
+                    self.screen.blit(piece_image, piece_pos)
 
         # Draw the promotion menu
         menu_x = self.board_size + 10
@@ -202,14 +205,14 @@ class ChessGame:
         clock_text_rect = clock_text.get_rect(center=(self.window_width - self.sidebar_width // 2, 50))
         self.screen.blit(clock_text, clock_text_rect)
 
-
         # Draw the valid moves for the selected piece
         if self.selected_piece_pos is not None:
             for move in self.valid_moves:
                 if move.from_square == self.selected_piece_pos:
                     dest_col, dest_row = chess.square_file(move.to_square), 7 - chess.square_rank(move.to_square)
                     pygame.draw.circle(self.screen, self.BLUE, (
-                    dest_col * self.tile_size + self.tile_size // 2, dest_row * self.tile_size + self.tile_size // 2),
+                        dest_col * self.tile_size + self.tile_size // 2,
+                        dest_row * self.tile_size + self.tile_size // 2),
                                        8)
 
     def get_valid_moves(self):
