@@ -1,7 +1,11 @@
 import sys
+import threading
 from datetime import datetime
+from threading import Thread
+
 import pygame
 import chess
+import chess.engine
 import time
 
 
@@ -46,6 +50,7 @@ class ChessGame:
 
         # Create stuff for engine
         self.if_engine = False
+        self.engine = chess.engine.SimpleEngine.popen_uci("/opt/homebrew/Cellar/stockfish/15.1/bin/stockfish")
 
         # Load piece images
         self.piece_images = {}
@@ -282,12 +287,9 @@ class ChessGame:
             y = menu_y + i * self.tile_size
             self.screen.blit(piece_image, (x, y))
 
-        # Draw the suggested move
-        if self.if_engine:
-            evaluation_text = self.notation_font.render(f"Suggested move: e4", True, self.BLACK)
-            evaluation_text_rect = evaluation_text.get_rect(center=(self.board_size + self.sidebar_width // 2, 100))
-            self.screen.blit(evaluation_text, evaluation_text_rect)
-
+        # Play the stockfish move as black
+        if self.if_engine and self.board.turn == chess.BLACK:
+                self.play_stockfish_move()
 
         # Draw black's clock
         minutes_b = self.black_time // 60
@@ -364,6 +366,16 @@ class ChessGame:
     def export_fen(self):
         with open(f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.fen", "w") as f:
             f.write(self.board.fen())
+
+    def play_stockfish_move(self):
+        def run_engine():
+            with self.engine.play(self.board, chess.engine.Limit(time=self.time)) as result:
+                move = result.move
+                self.board.push(move)
+                self.notation.append(move)
+                self.get_valid_moves()
+
+        threading.Thread(target=run_engine).start()
 
 
 if __name__ == "__main__":
