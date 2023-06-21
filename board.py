@@ -1,5 +1,4 @@
 import sys
-
 import pygame
 import chess
 import time
