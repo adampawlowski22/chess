@@ -155,7 +155,8 @@ class ChessGame:
         for row in range(8):
             for col in range(8):
                 square_color = self.LIGHT_BROWN if (row + col) % 2 == 0 else self.DARK_BROWN
-                pygame.draw.rect(self.screen, square_color, (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size))
+                pygame.draw.rect(self.screen, square_color,
+                                 (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size))
 
         # Draw the chess pieces
         for row in range(8):
@@ -193,14 +194,18 @@ class ChessGame:
             notation_text_rect = notation_text.get_rect(x=self.board_size + 20, y=150 + i * 30)
             self.screen.blit(notation_text, notation_text_rect)
 
-        # Draw the valid moves
+        # Draw the valid moves for the selected piece
         if self.selected_piece_pos is not None:
             for move in self.valid_moves:
-                dest_col, dest_row = chess.square_file(move.to_square), 7 - chess.square_rank(move.to_square)
-                pygame.draw.circle(self.screen, self.BLUE, (dest_col * self.tile_size + self.tile_size // 2, dest_row * self.tile_size + self.tile_size // 2), 8)
+                if move.from_square == self.selected_piece_pos:
+                    dest_col, dest_row = chess.square_file(move.to_square), 7 - chess.square_rank(move.to_square)
+                    pygame.draw.circle(self.screen, self.BLUE, (
+                    dest_col * self.tile_size + self.tile_size // 2, dest_row * self.tile_size + self.tile_size // 2),
+                                       8)
 
     def get_valid_moves(self):
-        self.valid_moves = list(self.board.legal_moves)
+        self.valid_moves = list(
+            filter(lambda move: move.from_square == self.selected_piece_pos, self.board.legal_moves))
 
 
 if __name__ == "__main__":
