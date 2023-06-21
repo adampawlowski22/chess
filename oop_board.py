@@ -114,6 +114,20 @@ class ChessGame:
                                 self.get_valid_moves()
                         else:
                             move = chess.Move(self.selected_piece_pos, square)
+                            # Check if the move is a promotion move
+                            # Check if it was a pawn move
+                            if self.selected_piece.piece_type == chess.PAWN:
+                                # Check if it was from the 2nd to the 7th rank
+                                if (self.selected_piece.color == chess.WHITE and
+                                    chess.square_rank(self.selected_piece_pos) == 6
+                                    and chess.square_rank(square) == 7) or \
+                                        (self.selected_piece.color == chess.BLACK and
+                                         chess.square_rank(self.selected_piece_pos) == 1 and
+                                         chess.square_rank(square) == 0):
+                                    move.promotion = self.clicked_promotion_piece
+                                    self.clicked_promotion_piece = None
+
+                            print(move)
                             if move in self.valid_moves:
                                 # If the move is valid, update the board
                                 self.board.push(move)
@@ -188,11 +202,6 @@ class ChessGame:
         clock_text_rect = clock_text.get_rect(center=(self.window_width - self.sidebar_width // 2, 50))
         self.screen.blit(clock_text, clock_text_rect)
 
-        # Draw the notation
-        for i, move in enumerate(self.notation):
-            notation_text = self.notation_font.render(str(move), True, self.BLACK)
-            notation_text_rect = notation_text.get_rect(x=self.board_size + 20, y=150 + i * 30)
-            self.screen.blit(notation_text, notation_text_rect)
 
         # Draw the valid moves for the selected piece
         if self.selected_piece_pos is not None:
