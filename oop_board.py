@@ -14,6 +14,11 @@ class ChessGame:
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
 
+        # Define the time limit for each player
+        self.time = 60 * 5
+        self.black_time = self.time
+        self.white_time = self.time
+
         # Initialize Pygame
         pygame.init()
 
@@ -27,7 +32,7 @@ class ChessGame:
         pygame.display.set_caption("Chess Game")
 
         # Set the clock font and size
-        self.clock_font = pygame.font.Font(None, 36)
+        self.clock_font = pygame.font.Font(None, 72)
 
         # Set the notation font and size
         self.notation_font = pygame.font.Font(None, 24)
@@ -150,6 +155,13 @@ class ChessGame:
             # Control the frame rate
             self.clock.tick(60)
 
+            # decrement the correct players clock
+            if self.board.turn == chess.BLACK:
+                self.black_time -= (time.time() - self.start_time)
+            else:
+                self.white_time -= (time.time() - self.start_time)
+            self.start_time = time.time()
+
         # Quit the game
         pygame.quit()
         sys.exit(0)
@@ -197,13 +209,20 @@ class ChessGame:
             y = menu_y + i * self.tile_size
             self.screen.blit(piece_image, (x, y))
 
-        # Draw the clock
-        current_time = int(time.time() - self.start_time)
-        minutes = current_time // 60
-        seconds = current_time % 60
-        clock_text = self.clock_font.render(f"{minutes:02d}:{seconds:02d}", True, self.BLACK)
-        clock_text_rect = clock_text.get_rect(center=(self.window_width - self.sidebar_width // 2, 50))
-        self.screen.blit(clock_text, clock_text_rect)
+
+        # Draw black's clock
+        minutes_b = self.black_time // 60
+        seconds_b = self.black_time % 60 // 1
+        clock_text_b = self.clock_font.render(f"{minutes_b:02.0f}:{seconds_b:02.0f}", True, self.BLACK)
+        clock_text_rect_b = clock_text_b.get_rect(center=(self.window_width - self.sidebar_width // 2, 50))
+        self.screen.blit(clock_text_b, clock_text_rect_b)
+
+        # Draw white's clock
+        minutes_w = self.white_time // 60
+        seconds_w = self.white_time % 60 // 1
+        clock_text_w = self.clock_font.render(f"{minutes_w:02.0f}:{seconds_w:02.0f}", True, self.BLACK)
+        clock_text_rect_w = clock_text_w.get_rect(center=(self.window_width - self.sidebar_width // 2, 600))
+        self.screen.blit(clock_text_w, clock_text_rect_w)
 
         # Draw the valid moves for the selected piece
         if self.selected_piece_pos is not None:
