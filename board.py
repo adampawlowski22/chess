@@ -1,3 +1,5 @@
+import sys
+
 import pygame
 import chess
 import time
@@ -88,8 +90,10 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == "MainMenu":
                 # Check if the "Start Game" button was clicked
-                if 500 >= event.pos[0] >= 300 >= event.pos[1] >= 250:
-                    game_state = "Chessboard"
+                start_button_rect = pygame.Rect(300, 250, 200, 50)
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if start_button_rect.collidepoint(event.pos):
+                        game_state = "Chessboard"
 
             elif game_state == "Chessboard":
                 # Handle chessboard events
@@ -162,7 +166,6 @@ while running:
         eve_text = clock_font.render("Engine vs Engine", True, BLACK)
         screen.blit(eve_text, (60, 460))
 
-
     elif game_state == "Chessboard":
         # Draw the chessboard
         for row in range(8):
@@ -231,3 +234,4 @@ while running:
 
 # Quit Pygame
 pygame.quit()
+sys.exit()
