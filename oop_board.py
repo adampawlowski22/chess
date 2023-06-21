@@ -49,6 +49,7 @@ class ChessGame:
         # Store the selected piece and its position
         self.selected_piece = None
         self.selected_piece_pos = None
+        self.valid_moves = []
 
         # Store the notation of played moves
         self.notation = []
@@ -86,7 +87,6 @@ class ChessGame:
 
                     elif self.game_state == "Chessboard":
                         # Handle chessboard events
-                        # Get the tile position where the mouse was clicked
                         x, y = pygame.mouse.get_pos()
                         if x > self.board_size:
                             # Check if the click is inside the promotion menu
@@ -103,51 +103,28 @@ class ChessGame:
                         row = 7 - y // self.tile_size
                         col = x // self.tile_size
 
-                        # Get the piece on the clicked tile
                         square = chess.square(col, row)
                         piece = self.board.piece_at(square)
 
                         if self.selected_piece is None:
-                            # If no piece is selected, check if the clicked tile contains a piece
-                            if piece is not None:
+                            if piece is not None and piece.color == self.board.turn:
                                 # Store the selected piece and its position
                                 self.selected_piece = piece
                                 self.selected_piece_pos = square
+                                self.get_valid_moves()
                         else:
-                            # If a piece is already selected, try to make a move
                             move = chess.Move(self.selected_piece_pos, square)
-
-                            if (
-                                self.selected_piece.piece_type == chess.PAWN
-                                and (
-                                    chess.square_rank(move.to_square) == 0
-                                    or chess.square_rank(move.to_square) == 7
-                                )
-                            ):
-                                # Handle pawn promotion
-                                self.handle_promotion(move)
-                            elif (
-                                self.selected_piece.piece_type == chess.PAWN
-                                and self.board.is_capture(move)
-                                and (
-                                    chess.square_rank(move.to_square) == 0
-                                    or chess.square_rank(move.to_square) == 7
-                                )
-                            ):
-                                # Handle capture to promotion
-                                self.handle_promotion(move)
-                            else:
-                                if move in self.board.legal_moves:
-                                    # If the move is valid, update the board
-                                    self.board.push(move)
-                                    self.notation.append(move)
-
+                            if move in self.valid_moves:
+                                # If the move is valid, update the board
+                                self.board.push(move)
+                                self.notation.append(move)
+                                self.valid_moves = []
                             # Reset the selected piece and its position
                             self.selected_piece = None
                             self.selected_piece_pos = None
 
             # Clear the screen
-            self.screen.fill(self.LIGHT_BROWN)
+            self.screen.fill(self.GRAY)
 
             if self.game_state == "MainMenu":
                 self.draw_main_menu()
@@ -160,101 +137,72 @@ class ChessGame:
             # Control the frame rate
             self.clock.tick(60)
 
-        # Quit Pygame
+        # Quit the game
         pygame.quit()
-        sys.exit()
-
-    def handle_promotion(self, move):
-        if self.clicked_promotion_piece is not None:
-            move.promotion = self.clicked_promotion_piece
-            if move in self.board.legal_moves:
-                # If the move is valid, update the board
-                self.board.push(move)
-                self.notation.append(move)
-        # Reset the clicked promotion piece
-        self.clicked_promotion_piece = None
+        sys.exit(0)
 
     def draw_main_menu(self):
-        # Draw the main menu
-        header_text = self.clock_font.render("Chess by Adam Pawlowski", True, self.BLACK)
-        self.screen.blit(header_text, (50, 50))
-
-        pvp = pygame.draw.rect(self.screen, self.DARK_BROWN, (50, 250, 230, 50))
-        pvp_text = self.clock_font.render("Player vs Player", True, self.BLACK)
-        self.screen.blit(pvp_text, (60, 260))
-        pve = pygame.draw.rect(self.screen, self.DARK_BROWN, (50, 350, 230, 50))
-        pve_text = self.clock_font.render("Player vs Engine", True, self.BLACK)
-        self.screen.blit(pve_text, (60, 360))
-        eve = pygame.draw.rect(self.screen, self.DARK_BROWN, (50, 450, 230, 50))
-        eve_text = self.clock_font.render("Engine vs Engine", True, self.BLACK)
-        self.screen.blit(eve_text, (60, 460))
+        # Draw the "Start Game" button
+        start_button_rect = pygame.Rect(50, 250, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, start_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, start_button_rect, 3)
+        start_button_text = self.notation_font.render("Start Game", True, self.BLACK)
+        start_button_text_rect = start_button_text.get_rect(center=start_button_rect.center)
+        self.screen.blit(start_button_text, start_button_text_rect)
 
     def draw_chessboard(self):
-        # Draw the chessboard
+        # Draw the chessboard squares
         for row in range(8):
             for col in range(8):
-                x = col * self.tile_size
-                y = (7 - row) * self.tile_size
-                if (row + col) % 2 == 0:
-                    pygame.draw.rect(self.screen, self.LIGHT_BROWN, (x, y, self.tile_size, self.tile_size))
-                else:
-                    pygame.draw.rect(self.screen, self.DARK_BROWN, (x, y, self.tile_size, self.tile_size))
+                square_color = self.LIGHT_BROWN if (row + col) % 2 == 0 else self.DARK_BROWN
+                pygame.draw.rect(self.screen, square_color, (col * self.tile_size, row * self.tile_size, self.tile_size, self.tile_size))
 
-        # Draw the chess pieces on the board
-        for square in chess.SQUARES:
-            rank = chess.square_rank(square)
-            file = chess.square_file(square)
-            x = file * self.tile_size
-            y = (7 - rank) * self.tile_size
+        # Draw the chess pieces
+        for row in range(8):
+            for col in range(8):
+                square = chess.square(col, 7 - row)
+                piece = self.board.piece_at(square)
+                if piece is not None:
+                    piece_image = self.piece_images[(piece.piece_type, piece.color)]
+                    self.screen.blit(piece_image, (col * self.tile_size, row * self.tile_size))
 
-            # Draw the chess piece if it exists on the current square
-            piece = self.board.piece_at(square)
-            if piece is not None:
-                piece_image = self.piece_images[(piece.piece_type, piece.color)]
-                self.screen.blit(piece_image, (x, y))
-
-        # Draw a blue border around the selected piece
-        if self.selected_piece is not None:
-            selected_x = chess.square_file(self.selected_piece_pos) * self.tile_size
-            selected_y = (7 - chess.square_rank(self.selected_piece_pos)) * self.tile_size
-            pygame.draw.rect(self.screen, self.BLUE, (selected_x, selected_y, self.tile_size, self.tile_size), 5)
-
-        # Draw the sidebar
-        pygame.draw.rect(self.screen, self.WHITE, (self.board_size, 0, self.sidebar_width, self.board_size))
-
-        # Draw the promotion menu on the sidebar
+        # Draw the promotion menu
         menu_x = self.board_size + 10
         menu_y = (self.board_size - (self.tile_size * len(self.promotion_menu_pieces))) // 2
-        pygame.draw.rect(
-            self.screen,
-            self.LIGHT_BROWN,
-            (menu_x, menu_y, self.sidebar_width - 20, self.tile_size * len(self.promotion_menu_pieces)),
-        )
+        menu_width = self.sidebar_width - 20
+        menu_height = self.tile_size * len(self.promotion_menu_pieces)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, (menu_x, menu_y, menu_width, menu_height))
+        pygame.draw.rect(self.screen, self.DARK_BROWN, (menu_x, menu_y, menu_width, menu_height), 3)
         for i, piece_type in enumerate(self.promotion_menu_pieces):
-            piece_image = self.piece_images[(piece_type, chess.WHITE)]
-            piece_x = menu_x + 10
-            piece_y = menu_y + i * self.tile_size
-            self.screen.blit(piece_image, (piece_x, piece_y))
-
-        # Draw the notation
-        notation_x = self.board_size + 10
-        notation_y = self.board_size - 10
-        for i, move in enumerate(self.notation):
-            notation_text = self.notation_font.render(str(move), True, self.BLACK)
-            self.screen.blit(notation_text, (notation_x, notation_y - (i + 1) * 30))
-
-        # Draw the current move count
-        move_count_text = self.clock_font.render("Move: " + str(len(self.notation)), True, self.BLACK)
-        self.screen.blit(move_count_text, (notation_x, notation_y - (len(self.notation) + 1) * 30))
+            piece_image = self.piece_images[(piece_type, self.board.turn)]
+            x = menu_x + (menu_width - self.tile_size) // 2
+            y = menu_y + i * self.tile_size
+            self.screen.blit(piece_image, (x, y))
 
         # Draw the clock
-        elapsed_time = time.time() - self.start_time
-        clock_text = self.clock_font.render(
-            "Time: " + time.strftime("%H:%M:%S", time.gmtime(elapsed_time)), True, self.BLACK
-        )
-        self.screen.blit(clock_text, (notation_x, notation_y - (len(self.notation) + 2) * 30))
+        current_time = int(time.time() - self.start_time)
+        minutes = current_time // 60
+        seconds = current_time % 60
+        clock_text = self.clock_font.render(f"{minutes:02d}:{seconds:02d}", True, self.BLACK)
+        clock_text_rect = clock_text.get_rect(center=(self.window_width - self.sidebar_width // 2, 50))
+        self.screen.blit(clock_text, clock_text_rect)
+
+        # Draw the notation
+        for i, move in enumerate(self.notation):
+            notation_text = self.notation_font.render(str(move), True, self.BLACK)
+            notation_text_rect = notation_text.get_rect(x=self.board_size + 20, y=150 + i * 30)
+            self.screen.blit(notation_text, notation_text_rect)
+
+        # Draw the valid moves
+        if self.selected_piece_pos is not None:
+            for move in self.valid_moves:
+                dest_col, dest_row = chess.square_file(move.to_square), 7 - chess.square_rank(move.to_square)
+                pygame.draw.circle(self.screen, self.BLUE, (dest_col * self.tile_size + self.tile_size // 2, dest_row * self.tile_size + self.tile_size // 2), 8)
+
+    def get_valid_moves(self):
+        self.valid_moves = list(self.board.legal_moves)
 
 
-# Create and run the chess game
-chess_game = ChessGame()
-chess_game.run()
+if __name__ == "__main__":
+    chess_game = ChessGame()
+    chess_game.run()
