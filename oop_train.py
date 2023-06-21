@@ -1,7 +1,7 @@
 import random
 import chess
 import numpy as np
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense
 
 
@@ -31,6 +31,9 @@ class ChessAI:
         model.fit(X_train, y_train, epochs=10)
 
         self.model = model
+
+    def load_model(self, model_path):
+        self.model = load_model(model_path)
 
     @staticmethod
     def random_board(max_depth=100):
@@ -80,6 +83,12 @@ class ChessAI:
 if __name__ == '__main__':
     chess_ai = ChessAI()
     chess_ai.train(num_samples=10, max_depth=100)
+
+    # Save the model
+    chess_ai.model.save("chess_model.h5")
+
+    # Load the model
+    chess_ai.load_model("chess_model.h5")
 
     # Create a sample chess position
     board = chess_ai.random_board()
