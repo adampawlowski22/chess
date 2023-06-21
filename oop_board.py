@@ -7,6 +7,7 @@ import pygame
 import chess
 import chess.engine
 import time
+from oop_train import ChessAI
 
 
 class ChessGame:
@@ -51,6 +52,7 @@ class ChessGame:
         # Create stuff for engine
         self.if_engine = False
         self.engine = chess.engine.SimpleEngine.popen_uci("/opt/homebrew/Cellar/stockfish/15.1/bin/stockfish")
+        self.engine_thread = None
 
         # Load piece images
         self.piece_images = {}
@@ -287,9 +289,9 @@ class ChessGame:
             y = menu_y + i * self.tile_size
             self.screen.blit(piece_image, (x, y))
 
-        # Play the stockfish move as black
+        # Play the engine move as black
         if self.if_engine and self.board.turn == chess.BLACK:
-                self.play_stockfish_move()
+            self.play_engine_move()
 
         # Draw black's clock
         minutes_b = self.black_time // 60
@@ -367,15 +369,13 @@ class ChessGame:
         with open(f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.fen", "w") as f:
             f.write(self.board.fen())
 
-    def play_stockfish_move(self):
-        def run_engine():
-            with self.engine.play(self.board, chess.engine.Limit(time=self.time)) as result:
-                move = result.move
-                self.board.push(move)
-                self.notation.append(move)
-                self.get_valid_moves()
-
-        threading.Thread(target=run_engine).start()
+    def play_engine_move(self):
+        ai = ChessAI()
+        ai.load_model("chess_model.h5")
+        move = ai.predict_move(self.board)
+        if move is not None:
+            self.board.push(move)
+        return
 
 
 if __name__ == "__main__":
