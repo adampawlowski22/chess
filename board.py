@@ -90,7 +90,8 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == "MainMenu":
                 # Check if the "Start Game" button was clicked
-                start_button_rect = pygame.Rect(300, 250, 200, 50)
+                # (50, 250, 230, 50)
+                start_button_rect = pygame.Rect(50, 250, 230, 50)
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if start_button_rect.collidepoint(event.pos):
                         game_state = "Chessboard"
