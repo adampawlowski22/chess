@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 import pygame
 import chess
 import time
@@ -36,6 +37,9 @@ class ChessGame:
 
         # Set the notation font and size
         self.notation_font = pygame.font.Font(None, 24)
+
+        # Set the title font
+        self.title_font = pygame.font.Font(None, 50)
 
         # Create a chess board
         self.board = chess.Board()
@@ -89,6 +93,30 @@ class ChessGame:
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                             if start_button_rect.collidepoint(event.pos):
                                 self.game_state = "Chessboard"
+                    elif self.game_state == "GameOver":
+                        play_again_button_rect = pygame.Rect(50, 250, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if play_again_button_rect.collidepoint(event.pos):
+                                self.board.reset()
+                                self.notation = []
+                                self.game_state = "Chessboard"
+                                continue
+                        # Check if the "Main Menu" button was clicked
+                        main_menu_button_rect = pygame.Rect(50, 350, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if main_menu_button_rect.collidepoint(event.pos):
+                                self.board.reset()
+                                self.notation = []
+                                self.game_state = "MainMenu"
+                                continue
+
+                        # Check if the "Export fen" button was clicked
+                        export_fen_button_rect = pygame.Rect(50, 450, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if export_fen_button_rect.collidepoint(event.pos):
+                                self.export_fen()
+                                continue
+
                     elif self.game_state == "Chessboard":
                         # Handle chessboard events
                         x, y = pygame.mouse.get_pos()
@@ -131,7 +159,6 @@ class ChessGame:
                                     move.promotion = self.clicked_promotion_piece
                                     self.clicked_promotion_piece = None
 
-                            print(move)
                             if move in self.valid_moves:
                                 # If the move is valid, update the board
                                 self.board.push(move)
@@ -148,6 +175,8 @@ class ChessGame:
                 self.draw_main_menu()
             elif self.game_state == "Chessboard":
                 self.draw_chessboard()
+            elif self.game_state == "GameOver":
+                self.draw_game_over()
 
             # Update the display
             pygame.display.flip()
@@ -162,11 +191,20 @@ class ChessGame:
                 self.white_time -= (time.time() - self.start_time)
             self.start_time = time.time()
 
+            # Check if the game is over
+            if self.board.is_game_over():
+                self.game_state = "GameOver"
+
         # Quit the game
         pygame.quit()
         sys.exit(0)
 
     def draw_main_menu(self):
+        # Draw the title
+        title_text = self.title_font.render("Chess by Adam Pawlowski", True, self.BLACK)
+        title_text_rect = title_text.get_rect(center=(self.board_size // 2, 100))
+        self.screen.blit(title_text, title_text_rect)
+
         # Draw the "Start Game" button
         start_button_rect = pygame.Rect(50, 250, 230, 50)
         pygame.draw.rect(self.screen, self.LIGHT_BROWN, start_button_rect)
@@ -174,6 +212,15 @@ class ChessGame:
         start_button_text = self.notation_font.render("Start Game", True, self.BLACK)
         start_button_text_rect = start_button_text.get_rect(center=start_button_rect.center)
         self.screen.blit(start_button_text, start_button_text_rect)
+
+        # Draw the "Player vs Computer" button
+        player_vs_computer_button_rect = pygame.Rect(50, 350, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, player_vs_computer_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, player_vs_computer_button_rect, 3)
+        player_vs_computer_button_text = self.notation_font.render("Player vs Computer", True, self.BLACK)
+        player_vs_computer_button_text_rect = player_vs_computer_button_text.get_rect(
+            center=player_vs_computer_button_rect.center)
+        self.screen.blit(player_vs_computer_button_text, player_vs_computer_button_text_rect)
 
     def draw_chessboard(self):
         # Draw the chessboard squares
@@ -209,7 +256,6 @@ class ChessGame:
             y = menu_y + i * self.tile_size
             self.screen.blit(piece_image, (x, y))
 
-
         # Draw black's clock
         minutes_b = self.black_time // 60
         seconds_b = self.black_time % 60 // 1
@@ -237,6 +283,54 @@ class ChessGame:
     def get_valid_moves(self):
         self.valid_moves = list(
             filter(lambda move: move.from_square == self.selected_piece_pos, self.board.legal_moves))
+
+    def draw_game_over(self):
+        # Draw the "Play Again" button
+        play_again_button_rect = pygame.Rect(50, 250, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, play_again_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, play_again_button_rect, 3)
+        play_again_button_text = self.notation_font.render("Play Again", True, self.BLACK)
+        play_again_button_text_rect = play_again_button_text.get_rect(center=play_again_button_rect.center)
+        self.screen.blit(play_again_button_text, play_again_button_text_rect)
+
+        # Draw the "Main Menu" button
+        main_menu_button_rect = pygame.Rect(50, 350, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, main_menu_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, main_menu_button_rect, 3)
+        main_menu_button_text = self.notation_font.render("Main Menu", True, self.BLACK)
+        main_menu_button_text_rect = main_menu_button_text.get_rect(center=main_menu_button_rect.center)
+        self.screen.blit(main_menu_button_text, main_menu_button_text_rect)
+
+        # Draw the "Export FEN" button
+        export_fen_button_rect = pygame.Rect(50, 450, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, export_fen_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, export_fen_button_rect, 3)
+        export_fen_button_text = self.notation_font.render("Export FEN", True, self.BLACK)
+        export_fen_button_text_rect = export_fen_button_text.get_rect(center=export_fen_button_rect.center)
+        self.screen.blit(export_fen_button_text, export_fen_button_text_rect)
+
+        # Draw the game over text
+        if self.board.is_checkmate():
+            text = "Checkmate"
+        elif self.board.is_stalemate():
+            text = "Stalemate"
+        elif self.board.is_insufficient_material():
+            text = "Insufficient Material"
+        elif self.board.is_seventyfive_moves():
+            text = "75 Moves"
+        elif self.board.is_fivefold_repetition():
+            text = "5 Fold Repetition"
+        elif self.board.is_check():
+            text = "Check"
+        else:
+            text = "Game Over"
+        game_over_text = self.notation_font.render(text, True, self.BLACK)
+        game_over_text_rect = game_over_text.get_rect(center=(self.window_width // 2, 100))
+        self.screen.blit(game_over_text, game_over_text_rect)
+
+    def export_fen(self):
+        with open(f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.fen", "w") as f:
+            f.write(self.board.fen())
 
 
 if __name__ == "__main__":
