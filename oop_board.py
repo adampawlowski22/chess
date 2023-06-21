@@ -44,6 +44,9 @@ class ChessGame:
         # Create a chess board
         self.board = chess.Board()
 
+        # Create stuff for engine
+        self.if_engine = False
+
         # Load piece images
         self.piece_images = {}
         for piece_type in chess.PIECE_TYPES:
@@ -93,6 +96,21 @@ class ChessGame:
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                             if start_button_rect.collidepoint(event.pos):
                                 self.game_state = "Chessboard"
+                                self.if_engine = False
+
+                        # Check if the "Player vs Computer" button was clicked
+                        player_vs_computer_button_rect = pygame.Rect(50, 350, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if player_vs_computer_button_rect.collidepoint(event.pos):
+                                self.game_state = "Chessboard"
+                                self.if_engine = True
+
+                        # Check if the "Quit" button was clicked
+                        quit_button_rect = pygame.Rect(50, 450, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if quit_button_rect.collidepoint(event.pos):
+                                running = False
+
                     elif self.game_state == "GameOver":
                         play_again_button_rect = pygame.Rect(50, 250, 230, 50)
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -222,6 +240,14 @@ class ChessGame:
             center=player_vs_computer_button_rect.center)
         self.screen.blit(player_vs_computer_button_text, player_vs_computer_button_text_rect)
 
+        # Draw the "Quit" button
+        quit_button_rect = pygame.Rect(50, 450, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, quit_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, quit_button_rect, 3)
+        quit_button_text = self.notation_font.render("Quit", True, self.BLACK)
+        quit_button_text_rect = quit_button_text.get_rect(center=quit_button_rect.center)
+        self.screen.blit(quit_button_text, quit_button_text_rect)
+
     def draw_chessboard(self):
         # Draw the chessboard squares
         for row in range(8):
@@ -255,6 +281,13 @@ class ChessGame:
             x = menu_x + (menu_width - self.tile_size) // 2
             y = menu_y + i * self.tile_size
             self.screen.blit(piece_image, (x, y))
+
+        # Draw the suggested move
+        if self.if_engine:
+            evaluation_text = self.notation_font.render(f"Suggested move: e4", True, self.BLACK)
+            evaluation_text_rect = evaluation_text.get_rect(center=(self.board_size + self.sidebar_width // 2, 100))
+            self.screen.blit(evaluation_text, evaluation_text_rect)
+
 
         # Draw black's clock
         minutes_b = self.black_time // 60
