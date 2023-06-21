@@ -7,7 +7,7 @@ from keras.layers import Dense
 
 def random_board(max_depth=100):
     board = chess.Board()
-    depth = random.randrange(0, max_depth)
+    depth = random.randrange(40, max_depth)
 
     for _ in range(depth):
         all_moves = list(board.legal_moves)
@@ -32,8 +32,9 @@ def encode_position(position):
 
 def decode_move(prediction, legal_moves):
     move_probs = prediction.flatten()
-    move_index = np.argmax(move_probs)  # Select the move with the highest probability
-    selected_move = legal_moves[move_index]
+    legal_move_indices = [i for i, move in enumerate(legal_moves)]
+    move_index = np.argmax(move_probs[np.array(legal_move_indices)])  # Select the move with the highest probability
+    selected_move = legal_moves[legal_move_indices[move_index]]
 
     return selected_move
 
@@ -56,7 +57,7 @@ y_train = np.array(y_train)
 # Define the model architecture
 model = Sequential()
 model.add(Dense(32, activation='relu', input_shape=(64,)))
-model.add(Dense(64, activation='softmax'))  # Output a probability distribution over moves
+model.add(Dense(2064, activation='softmax'))  # Output a probability distribution over moves
 
 # Compile the model
 model.compile(optimizer='adam', loss='mse')
@@ -68,9 +69,7 @@ model.fit(X_train, y_train, epochs=10)
 model.save("chess_model.h5")
 
 # Create a sample chess position
-board = chess.Board()
-board.set_piece_at(chess.E4, chess.Piece(chess.PAWN, chess.WHITE))
-board.set_piece_at(chess.E5, chess.Piece(chess.PAWN, chess.BLACK))
+board = random_board()
 
 # Encode the position
 encoded_position = encode_position(board)
@@ -89,3 +88,6 @@ selected_move = decode_move(prediction, legal_moves)
 
 # Print the predicted move
 print("Predicted Move:", selected_move)
+
+# Print the board
+print(board)
