@@ -5,6 +5,7 @@ import chess
 import chess.engine
 import time
 from train import ChessAI
+import threading
 
 
 class ChessGame:
@@ -116,6 +117,8 @@ class ChessGame:
                                 running = False
 
                     elif self.game_state == "GameOver":
+                        self.engine_thread.join()
+                        self.engine_thread = None
                         play_again_button_rect = pygame.Rect(50, 250, 230, 50)
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                             if play_again_button_rect.collidepoint(event.pos):
@@ -287,8 +290,8 @@ class ChessGame:
             self.screen.blit(piece_image, (x, y))
 
         # Play the engine move as black
-        if self.if_engine and self.board.turn == chess.BLACK:
-            self.play_engine_move()
+        if self.if_engine:
+            self.start_engine_thread()
 
         # Draw black's clock
         minutes_b = self.black_time // 60
@@ -374,6 +377,15 @@ class ChessGame:
             self.board.push(move)
         return
 
+    def start_engine_thread(self):
+        if self.engine_thread is not None:
+            self.engine_thread.join()
+        self.engine_thread = threading.Thread(target=self.play_engine_move_thread)
+        self.engine_thread.start()
+
+    def play_engine_move_thread(self):
+        while self.board.turn == chess.BLACK and not self.board.is_game_over():
+            self.play_engine_move()
 
 if __name__ == "__main__":
     chess_game = ChessGame()
