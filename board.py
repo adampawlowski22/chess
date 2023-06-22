@@ -1,3 +1,4 @@
+import os
 import sys
 from datetime import datetime
 import pygame
@@ -155,6 +156,14 @@ class ChessGame:
                                 self.export_fen()
                                 continue
 
+                        # Check if the "Export PGN" button was clicked
+                        export_pgn_button_rect = pygame.Rect(50, 550, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if export_pgn_button_rect.collidepoint(event.pos):
+                                print(self.notation)
+                                self.export_pgn()
+                                continue
+
                     elif self.game_state == "Chessboard":
                         # Handle chessboard events
                         x, y = pygame.mouse.get_pos()
@@ -201,6 +210,7 @@ class ChessGame:
                                 # If the move is valid, update the board
                                 self.board.push(move)
                                 self.notation.append(move)
+                                print(self.notation)
                                 self.valid_moves = []
                             # Reset the selected piece and its position
                             self.selected_piece = None
@@ -364,6 +374,14 @@ class ChessGame:
         export_fen_button_text_rect = export_fen_button_text.get_rect(center=export_fen_button_rect.center)
         self.screen.blit(export_fen_button_text, export_fen_button_text_rect)
 
+        # Draw the "Export PGN" button
+        export_pgn_button_rect = pygame.Rect(50, 550, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, export_pgn_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, export_pgn_button_rect, 3)
+        export_pgn_button_text = self.notation_font.render("Export PGN", True, self.BLACK)
+        export_pgn_button_text_rect = export_pgn_button_text.get_rect(center=export_pgn_button_rect.center)
+        self.screen.blit(export_pgn_button_text, export_pgn_button_text_rect)
+
         # Draw the game over text
         if self.board.is_checkmate():
             text = "Checkmate"
@@ -384,8 +402,15 @@ class ChessGame:
         self.screen.blit(game_over_text, game_over_text_rect)
 
     def export_fen(self):
-        with open(f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.fen", "w") as f:
+        with open(f"game_history/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.fen", "w") as f:
             f.write(self.board.fen())
+
+    def export_pgn(self):
+        print(self.notation)
+        with open(f"game_history/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pgn", "w") as f:
+            for move in self.notation:
+                f.write(move.__str__() + " ")
+            f.write(self.board.result())
 
     def play_engine_move(self):
         if self.engine is None:
@@ -416,7 +441,3 @@ class ChessGame:
         while self.board.turn == chess.WHITE and not self.board.is_game_over() and self.if_engine_vs_engine:
             self.play_engine_move()
 
-
-if __name__ == "__main__":
-    chess_game = ChessGame()
-    chess_game.run()
