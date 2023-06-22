@@ -49,8 +49,10 @@ class ChessGame:
 
         # Create stuff for engine
         self.if_engine = False
-        self.engine = chess.engine.SimpleEngine.popen_uci("/opt/homebrew/Cellar/stockfish/15.1/bin/stockfish")
-        self.engine_thread = None
+        self.if_engine_vs_engine = False
+        self.engine = None
+        self.engine_thread_black = None
+        self.engine_thread_white = None
 
         # Load piece images
         self.piece_images = {}
@@ -96,12 +98,13 @@ class ChessGame:
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if self.game_state == "MainMenu":
-                        # Check if the "Start Game" button was clicked
+                        # Check if the "Player vs Player" button was clicked
                         start_button_rect = pygame.Rect(50, 250, 230, 50)
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                             if start_button_rect.collidepoint(event.pos):
                                 self.game_state = "Chessboard"
                                 self.if_engine = False
+                                self.if_engine_vs_engine = False
 
                         # Check if the "Player vs Computer" button was clicked
                         player_vs_computer_button_rect = pygame.Rect(50, 350, 230, 50)
@@ -109,23 +112,33 @@ class ChessGame:
                             if player_vs_computer_button_rect.collidepoint(event.pos):
                                 self.game_state = "Chessboard"
                                 self.if_engine = True
+                                self.if_engine_vs_engine = False
+
+                        # Check if the "Computer vs Computer" button was clicked
+                        computer_vs_computer_button_rect = pygame.Rect(50, 450, 230, 50)
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if computer_vs_computer_button_rect.collidepoint(event.pos):
+                                self.game_state = "Chessboard"
+                                self.if_engine_vs_engine = True
+                                self.if_engine = False
 
                         # Check if the "Quit" button was clicked
-                        quit_button_rect = pygame.Rect(50, 450, 230, 50)
+                        quit_button_rect = pygame.Rect(50, 550, 230, 50)
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                             if quit_button_rect.collidepoint(event.pos):
                                 running = False
 
                     elif self.game_state == "GameOver":
-                        self.engine_thread.join()
-                        self.engine_thread = None
-                        play_again_button_rect = pygame.Rect(50, 250, 230, 50)
-                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                            if play_again_button_rect.collidepoint(event.pos):
-                                self.board.reset()
-                                self.notation = []
-                                self.game_state = "Chessboard"
-                                continue
+                        if self.engine_thread_white is not None:
+                            self.engine_thread_white.join()
+                            self.engine_thread_white = None
+                        if self.engine_thread_black is not None:
+                            self.engine_thread_black.join()
+                            self.engine_thread_black = None
+                        self.engine_thread_white = None
+                        self.engine_thread_black = None
+                        self.if_engine = False
+                        self.if_engine_vs_engine = False
                         # Check if the "Main Menu" button was clicked
                         main_menu_button_rect = pygame.Rect(50, 350, 230, 50)
                         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -230,11 +243,11 @@ class ChessGame:
         title_text_rect = title_text.get_rect(center=(self.board_size // 2, 100))
         self.screen.blit(title_text, title_text_rect)
 
-        # Draw the "Start Game" button
+        # Draw the "Player vs Player" button
         start_button_rect = pygame.Rect(50, 250, 230, 50)
         pygame.draw.rect(self.screen, self.LIGHT_BROWN, start_button_rect)
         pygame.draw.rect(self.screen, self.DARK_BROWN, start_button_rect, 3)
-        start_button_text = self.notation_font.render("Start Game", True, self.BLACK)
+        start_button_text = self.notation_font.render("Player vs Player", True, self.BLACK)
         start_button_text_rect = start_button_text.get_rect(center=start_button_rect.center)
         self.screen.blit(start_button_text, start_button_text_rect)
 
@@ -247,8 +260,17 @@ class ChessGame:
             center=player_vs_computer_button_rect.center)
         self.screen.blit(player_vs_computer_button_text, player_vs_computer_button_text_rect)
 
+        # Draw the Computer vs Computer button
+        computer_vs_computer_button_rect = pygame.Rect(50, 450, 230, 50)
+        pygame.draw.rect(self.screen, self.LIGHT_BROWN, computer_vs_computer_button_rect)
+        pygame.draw.rect(self.screen, self.DARK_BROWN, computer_vs_computer_button_rect, 3)
+        computer_vs_computer_button_text = self.notation_font.render("Computer vs Computer", True, self.BLACK)
+        computer_vs_computer_button_text_rect = computer_vs_computer_button_text.get_rect(
+            center=computer_vs_computer_button_rect.center)
+        self.screen.blit(computer_vs_computer_button_text, computer_vs_computer_button_text_rect)
+
         # Draw the "Quit" button
-        quit_button_rect = pygame.Rect(50, 450, 230, 50)
+        quit_button_rect = pygame.Rect(50, 550, 230, 50)
         pygame.draw.rect(self.screen, self.LIGHT_BROWN, quit_button_rect)
         pygame.draw.rect(self.screen, self.DARK_BROWN, quit_button_rect, 3)
         quit_button_text = self.notation_font.render("Quit", True, self.BLACK)
@@ -291,7 +313,11 @@ class ChessGame:
 
         # Play the engine move as black
         if self.if_engine:
-            self.start_engine_thread()
+            self.start_engine_thread_black()
+
+        if self.if_engine_vs_engine:
+            self.start_engine_thread_black()
+            self.start_engine_thread_white()
 
         # Draw black's clock
         minutes_b = self.black_time // 60
@@ -322,14 +348,6 @@ class ChessGame:
             filter(lambda move: move.from_square == self.selected_piece_pos, self.board.legal_moves))
 
     def draw_game_over(self):
-        # Draw the "Play Again" button
-        play_again_button_rect = pygame.Rect(50, 250, 230, 50)
-        pygame.draw.rect(self.screen, self.LIGHT_BROWN, play_again_button_rect)
-        pygame.draw.rect(self.screen, self.DARK_BROWN, play_again_button_rect, 3)
-        play_again_button_text = self.notation_font.render("Play Again", True, self.BLACK)
-        play_again_button_text_rect = play_again_button_text.get_rect(center=play_again_button_rect.center)
-        self.screen.blit(play_again_button_text, play_again_button_text_rect)
-
         # Draw the "Main Menu" button
         main_menu_button_rect = pygame.Rect(50, 350, 230, 50)
         pygame.draw.rect(self.screen, self.LIGHT_BROWN, main_menu_button_rect)
@@ -370,22 +388,34 @@ class ChessGame:
             f.write(self.board.fen())
 
     def play_engine_move(self):
-        ai = ChessAI()
-        ai.load_model("chess_model.h5")
-        move = ai.predict_move(self.board)
+        if self.engine is None:
+            self.engine = ChessAI()
+            self.engine.load_model("chess_model.h5")
+        move = self.engine.predict_move(self.board)
         if move is not None:
             self.board.push(move)
         return
 
-    def start_engine_thread(self):
-        if self.engine_thread is not None:
-            self.engine_thread.join()
-        self.engine_thread = threading.Thread(target=self.play_engine_move_thread)
-        self.engine_thread.start()
+    def start_engine_thread_black(self):
+        if self.engine_thread_black is not None:
+            self.engine_thread_black.join()
+        self.engine_thread_black = threading.Thread(target=self.play_engine_move_black_thread)
+        self.engine_thread_black.start()
 
-    def play_engine_move_thread(self):
+    def play_engine_move_black_thread(self):
         while self.board.turn == chess.BLACK and not self.board.is_game_over():
             self.play_engine_move()
+
+    def start_engine_thread_white(self):
+        if self.engine_thread_white is not None:
+            self.engine_thread_white.join()
+        self.engine_thread_white = threading.Thread(target=self.play_engine_move_white_thread)
+        self.engine_thread_white.start()
+
+    def play_engine_move_white_thread(self):
+        while self.board.turn == chess.WHITE and not self.board.is_game_over() and self.if_engine_vs_engine:
+            self.play_engine_move()
+
 
 if __name__ == "__main__":
     chess_game = ChessGame()
