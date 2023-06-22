@@ -11,8 +11,8 @@ import threading
 class ChessGame:
     def __init__(self):
         # Define some colors
-        self.LIGHT_BROWN = (176, 142, 112)
-        self.DARK_BROWN = (232, 204, 168)
+        self.LIGHT_BROWN = (232, 204, 168)
+        self.DARK_BROWN = (176, 142, 112)
         self.GRAY = (128, 128, 128)
         self.BLUE = (0, 0, 255)
         self.WHITE = (255, 255, 255)
