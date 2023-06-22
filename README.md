@@ -15,3 +15,10 @@ move = chess_ai.predict_move(board)
 print(move)
 ```
 
+## usage of ChessGame class
+
+```
+chess_game = ChessGame()
+chess_game.run()
+```
+
