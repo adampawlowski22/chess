@@ -1,10 +1,15 @@
-# chess by Adam Pawlowski
+# chess by *Adam Pawlowski*
 
 ## instalation
 
-```dupa```
+```
+git clone https://github.com/adampawlowski22/chess.git
+cd chess
+pip3 install -r requirements.txt
+python3 main.py
+```
 
-## usage of ChessAI class
+## example usage of ChessAI class
 
 ```
 from oop_train import ChessAI
@@ -15,7 +20,7 @@ move = chess_ai.predict_move(board)
 print(move)
 ```
 
-## usage of ChessGame class
+## example usage of ChessGame class
 
 ```
 chess_game = ChessGame()
