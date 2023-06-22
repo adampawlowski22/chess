@@ -85,7 +85,7 @@ class ChessAI:
 if __name__ == '__main__':
     chess_ai = ChessAI()
     start = datetime.now()
-    chess_ai.train(num_samples=1000000, max_depth=10)
+    chess_ai.train(num_samples=10000000, max_depth=20)
 
     # Save the model
     chess_ai.model.save("chess_model.h5")
