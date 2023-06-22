@@ -1,6 +1,5 @@
 import random
-from datetime import time, datetime
-
+from datetime import datetime
 import chess
 import numpy as np
 from keras.models import Sequential, load_model
@@ -39,17 +38,17 @@ class ChessAI:
 
     @staticmethod
     def random_board(max_depth=100):
-        board = chess.Board()
+        random_board = chess.Board()
         depth = random.randrange(0, max_depth)
 
         for _ in range(depth):
-            all_moves = list(board.legal_moves)
+            all_moves = list(random_board.legal_moves)
             random_move = random.choice(all_moves)
-            board.push(random_move)
-            if board.is_game_over():
+            random_board.push(random_move)
+            if random_board.is_game_over():
                 break
 
-        return board
+        return random_board
 
     @staticmethod
     def encode_position(position):
@@ -83,9 +82,12 @@ class ChessAI:
 
 
 if __name__ == '__main__':
+    NS = 1000000
+    MAXDEPTH = 3
+
     chess_ai = ChessAI()
     start = datetime.now()
-    chess_ai.train(num_samples=10000000, max_depth=20)
+    chess_ai.train(num_samples=NS, max_depth=MAXDEPTH)
 
     # Save the model
     chess_ai.model.save("chess_model.h5")
